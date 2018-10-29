@@ -6,3 +6,4 @@ Recursion Schemes in Scala
 - http://free.cofree.io/2017/11/13/recursion/ Recursion Schemes in Scala - An Absolutely Elementary Introduction
 - https://akmetiuk.com/posts/2017-03-10-matryoshka-intro.html#matryoshka Introduction to Recursion Schemes with Matryoshka
 - https://github.com/passy/awesome-recursion-schemes Resources for learning and using recursion schemes.
+- https://github.com/sellout/recursion-scheme-talk Recursion Scheme Talks
