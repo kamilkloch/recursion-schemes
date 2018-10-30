@@ -1,23 +1,25 @@
 import scalaz.Scalaz._
 import scalaz._
+import slamdata.Predef
 
 import scala.language.higherKinds
 
-sealed trait Expr[+A]
-
-case class Add[A](expr1: A, expr2: A) extends Expr[A]
-
-case class Mult[A](expr1: A, expr2: A) extends Expr[A]
-
-case class Num(literal: Int) extends Expr[Nothing]
 
 object RecursionSchemes extends App {
+
+  sealed trait Expr[+A]
+
+  case class Add[A](expr1: A, expr2: A) extends Expr[A]
+
+  case class Mult[A](expr1: A, expr2: A) extends Expr[A]
+
+  case class Num(literal: Int) extends Expr[Nothing]
 
   implicit val exprFunctor: Functor[Expr] = new Functor[Expr] {
     def map[A, B](fa: Expr[A])(f: A => B): Expr[B] = fa match {
       case Add(e1, e2) => Add(f(e1), f(e2))
       case Mult(e1, e2) => Mult(f(e1), f(e2))
-      case x@Num(_) => x
+      case Num(x) => Num(x)
     }
   }
 
@@ -75,8 +77,16 @@ object RecursionSchemes extends App {
 object RecursionSchemesMatryoshka extends App {
 
   import matryoshka.data.Fix
+  import matryoshka._
   import matryoshka.implicits._
-  import matryoshka.{Corecursive, Recursive} // Syntax
+
+  sealed trait Expr[A]
+
+  case class Add[A](expr1: A, expr2: A) extends Expr[A]
+
+  case class Mult[A](expr1: A, expr2: A) extends Expr[A]
+
+  case class Num[A](literal: Int) extends Expr[A]
 
   //  implicit val exprFunctor: Functor[Expr] = new Functor[Expr] {
   //    def map[A, B](fa: Expr[A])(f: A => B): Expr[B] = fa match {
@@ -90,33 +100,39 @@ object RecursionSchemesMatryoshka extends App {
     def traverseImpl[G[_], A, B](fa: Expr[A])(f: A => G[B])(implicit G: Applicative[G]): G[Expr[B]] = fa match {
       case Add(e1, e2) => G.apply2(f(e1), f(e2))(Add(_, _))
       case Mult(e1, e2) => G.apply2(f(e1), f(e2))(Mult(_, _))
-      case x@Num(_) => G.pure(x)
+      case Num(c) => G.pure(Num(c))
     }
   }
 
-  implicit def expShow[T]: Show[Expr[T]] = new Show[Expr[T]] {
 
+  implicit def expShow[T]: Show[Expr[T]] = new Show[Expr[T]] {
+    override def shows(e: Expr[T]): String = e.toString
   }
 
-  // Evaluate an expression
-  def eval[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int] {
+  val exprAlgebra: Algebra[Expr, Int] = {
     case Add(x1, x2) => x1 + x2
     case Mult(x1, x2) => x1 * x2
     case Num(x) => x
   }
 
+  // Evaluate an expression`
+  def eval[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int](exprAlgebra)
+
   def size[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int](matryoshka.size)
 
-  def tree[T](e: T)(implicit T: Recursive.Aux[T, Expr]) = e.cata(matryoshka.toTree)
+  def attr[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Cofree[Expr, Int] = e.cata(matryoshka.attributeAlgebra(exprAlgebra))
 
+  def tree[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Tree[Expr[Predef.Unit]] = e.cata(matryoshka.toTree)
+
+  val gg: Algebra[Expr, Cofree[Expr, Int]] = matryoshka.attributeAlgebra(exprAlgebra)
 
   def expr[T](implicit T: Corecursive.Aux[T, Expr]): T =
     Add(
       Mult(
-        Num(2).embed,
-        Num(3).embed
+        Num[T](2).embed,
+        Num[T](3).embed
       ).embed,
-      Num(3).embed
+      Num[T](3).embed
     ).embed
 
 
@@ -127,10 +143,12 @@ object RecursionSchemesMatryoshka extends App {
   }
 
 
-  val unwindExpr = unwind[Fix[Expr]](123235)
+  val unwindExpr: Fix[Expr] = unwind[Fix[Expr]](11)
+  val annotatedExpr: Cofree[Expr, Int] = attr(unwindExpr)
 
   println(unwindExpr)
   println(eval(unwindExpr))
-//  println(tree(unwindExpr).drawTree)
+  println(tree(unwindExpr).drawTree)
+  println(annotatedExpr)
 //  println(s"size = ${size(unwindExpr)}")
 }
