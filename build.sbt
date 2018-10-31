@@ -8,6 +8,9 @@ libraryDependencies += "com.slamdata" %% "matryoshka-core" % "0.18.3" withSource
 
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.26" withSources()
 
+resolvers += Resolver.sonatypeRepo("releases")
+
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
 
 scalacOptions ++= Seq(
   "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
