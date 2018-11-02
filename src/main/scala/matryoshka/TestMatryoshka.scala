@@ -5,8 +5,9 @@ import slamdata.Predef
 
 object TestMatryoshka extends App {
 
-  import matryoshka.data.Fix
   import matryoshka.implicits._
+  import matryoshka.data._
+  import matryoshka.patterns._
 
   sealed trait Expr[A]
 
@@ -54,6 +55,12 @@ object TestMatryoshka extends App {
 
   val gg: Algebra[Expr, Cofree[Expr, Int]] = matryoshka.attributeAlgebra(exprAlgebra)
 
+  def foo[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = T.histo[Int](e) {
+    case _: Expr[Cofree[Expr, Int]] => 1
+  }
+
+
+
   def expr[T](implicit T: Corecursive.Aux[T, Expr]): T =
     Add(
       Mult(
@@ -79,4 +86,9 @@ object TestMatryoshka extends App {
   println(tree(unwindExpr).drawTree)
   println(annotatedExpr)
   //  println(s"size = ${size(unwindExpr)}")
+
+//  println(eval(annotatedExpr))
+  implicitly[Recursive.Aux[Cofree[Expr, Int], EnvT[Int, Expr, ?]]]
+  println(annotatedExpr.head)
 }
+

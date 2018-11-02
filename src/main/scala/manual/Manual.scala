@@ -27,6 +27,11 @@ object Manual extends App {
   // Fixed point type
   case class Fix[F[_]](unfix: F[Fix[F]])
 
+  // Cofree
+  final case class Cofree[F[_], A](head: A, tail: F[Cofree[F, A]])
+
+  def coFreeToFix[F[_] : Functor](fix: Fix[F]): Cofree[F, Unit] = Cofree((), fix.unfix.map(coFreeToFix(_)(implicitly[Functor[F]])))
+
   // Catamorphism
   def cata[F[_] : Functor, A](structure: Fix[F])(algebra: F[A] => A): A = {
     // algebra(structure.unfix.map(cata(_)(algebra)))
