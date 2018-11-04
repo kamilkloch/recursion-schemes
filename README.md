@@ -2,6 +2,8 @@
 Recursion Schemes in Scala
 
 ## Resources
+- http://slides.com/zainabali_/peeling_the_banana#/ Peeling the banana - Recurscion schemes from from first principles, Zainab Ali (slides)
+- https://medium.com/@wiemzin/getting-started-with-recursion-schemes-using-matryoshka-f5b5ec01bb Getting started with recursion schemes using Matryoshka (Wiem Zine)
 - https://github.com/vil1/recursion-schemes-cookbook Recursion Schemes Cookbook
 - https://project-awesome.org/passy/awesome-recursion-schemes Awesome Recursion Schemes
 - https://github.com/slamdata/matryoshka Matryoshka - generalized folds, unfolds, and traversals for fixed point data structures in Scala.
