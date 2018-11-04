@@ -1,13 +1,14 @@
 package matryoshka
 
 import scalaz._
+import Scalaz._
 import slamdata.Predef
+import matryoshka.implicits._
+import matryoshka.data._
+import matryoshka.patterns._
 
 object TestMatryoshka extends App {
 
-  import matryoshka.implicits._
-  import matryoshka.data._
-  import matryoshka.patterns._
 
   sealed trait Expr[A]
 
@@ -60,6 +61,13 @@ object TestMatryoshka extends App {
   }
 
 
+  def labelWithPath[T](implicit T: Recursive.Aux[T, Expr]): Coalgebra[EnvT[String, Expr, ?], (String, T)] = {
+    case (carrier, e) =>
+      val gg: Expr[T] = T.project(e)
+      val newCarrier = s"$carrier / $gg}"
+      EnvT.envT((newCarrier, gg.map(x => (newCarrier, x))))
+  }
+
 
   def expr[T](implicit T: Corecursive.Aux[T, Expr]): T =
     Add(
@@ -87,8 +95,63 @@ object TestMatryoshka extends App {
   println(annotatedExpr)
   //  println(s"size = ${size(unwindExpr)}")
 
-//  println(eval(annotatedExpr))
+  //  println(eval(annotatedExpr))
   implicitly[Recursive.Aux[Cofree[Expr, Int], EnvT[Int, Expr, ?]]]
   println(annotatedExpr.head)
+
+  val e = expr[Fix[Expr]]
+
+  val ee = labelWithPath[Fix[Expr]]
+
+
+}
+
+
+object WiemMatryoshka extends App {
+
+  sealed trait Matryoshka[T]
+
+  case class Doll[T](name: String, daughter: T) extends Matryoshka[T]
+
+  case class Tiny[T](name: String) extends Matryoshka[T]
+
+  implicit val dollsFunctorImpl: Functor[Matryoshka] = new Functor[Matryoshka] {
+    override def map[A, B](fa: Matryoshka[A])(f: A => B): Matryoshka[B] = fa match {
+      case Doll(n, d) => Doll(n, f(d))
+      case Tiny(s) => Tiny(s)
+    }
+  }
+
+  val coalgebra: Coalgebra[Matryoshka, NonEmptyList[String]] = {
+    case NonEmptyList(h, _: INil[String]) => Tiny(h)
+    case NonEmptyList(h, l) =>
+      val list: List[String] = l.toList
+      Doll(h, NonEmptyList(list.head, list.tail: _*))
+  }
+
+  val names: NonEmptyList[String] = NonEmptyList("a", "b", "c", "d")
+  val result: Fix[Matryoshka] = names.ana[Fix[Matryoshka]](coalgebra)
+
+  println(result)
+
+  val countAlgebra: Algebra[Matryoshka, Int] = {
+    case Tiny(_) => 1
+    case Doll(_, cnt) => cnt + 1
+  }
+
+  case class Person(name: String, age: Int)
+
+  val algebraPerson: Algebra[Matryoshka, List[Person]] = {
+    //  case _: Matryoshka[List[Person]] => ???
+    case Doll(n, d) => d :+ Person(n, d.last.age + 1)
+    case Tiny(n) => Person(n, 6) :: Nil
+  }
+
+  println(result.cata[Int](countAlgebra))
+
+  println(names.hylo(algebraPerson, coalgebra))
+
+
+
 }
 
