@@ -1,11 +1,11 @@
 package matryoshka
 
-import scalaz._
-import Scalaz._
-import slamdata.Predef
-import matryoshka.implicits._
 import matryoshka.data._
+import matryoshka.implicits._
 import matryoshka.patterns._
+import scalaz.Scalaz._
+import scalaz._
+import slamdata.Predef
 
 object TestMatryoshka extends App {
 
@@ -64,8 +64,25 @@ object TestMatryoshka extends App {
   def labelWithPath[T](implicit T: Recursive.Aux[T, Expr]): Coalgebra[EnvT[String, Expr, ?], (String, T)] = {
     case (carrier, e) =>
       val gg: Expr[T] = T.project(e)
-      val newCarrier = s"$carrier / $gg}"
+      val newCarrier = gg match {
+        case Num(x) => s"$carrier / Num($x)"
+        case _: Add[_] => s"$carrier / Add"
+        case _: Mult[_] => s"$carrier / Mult"
+      }
       EnvT.envT((newCarrier, gg.map(x => (newCarrier, x))))
+  }
+
+  /** Attribute a tree via an algebra starting from the root. */
+  def myAttributeTopDown[A, T]
+  (T: Recursive.Aux[T, Expr])
+  (t: T, z: A)
+  (f: (A, T.Base[T]) => A)
+  (implicit BF: Functor[T.Base])
+  : Cofree[T.Base, A] = {
+    val ft: Expr[T] = T.project(t)(BF)
+    val a: A = f(z, ft)
+    val gg: T => Cofree[Expr[?], A] = myAttributeTopDown(T)(_, a)(f)
+    Cofree(a, ft map gg)
   }
 
 
@@ -101,7 +118,23 @@ object TestMatryoshka extends App {
 
   val e = expr[Fix[Expr]]
 
-  val ee = labelWithPath[Fix[Expr]]
+  val ee: Coalgebra[EnvT[String, Expr, ?], (String, Fix[Expr])] = labelWithPath[Fix[Expr]]
+
+  val labelled: Fix[EnvT[String, Expr, ?]] = ("", e).ana[Fix[EnvT[String, Expr, ?]]](ee)
+
+  def tree2[T](e: T)(implicit T: Recursive.Aux[T, EnvT[String, Expr, ?]]): Tree[EnvT[String, Expr, Unit]] = e.cata(matryoshka.toTree)
+
+  val tlabelled = tree2(labelled)
+  println(
+    tlabelled.drawTree(new Show[EnvT[String, Expr, Unit]] {
+      override def shows(e: EnvT[String, Expr, Unit]): String = s"${e.ask} : ${e.lower.toString}"
+    })
+  )
+
+  val aux = implicitly[Recursive.Aux[Fix[Expr], Expr]]
+
+  val topDown: Cofree[Expr, Int] = myAttributeTopDown(aux)(e, 0)((n, _) => n + 1)
+
 
 
 }
@@ -150,7 +183,6 @@ object WiemMatryoshka extends App {
   println(result.cata[Int](countAlgebra))
 
   println(names.hylo(algebraPerson, coalgebra))
-
 
 
 }
