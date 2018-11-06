@@ -3,6 +3,7 @@ Recursion Schemes in Scala
 
 ## Resources
 - http://slides.com/zainabali_/peeling_the_banana#/ Peeling the banana - Recursion schemes from from first principles, Zainab Ali (slides)
+- https://github.com/vil1/recursion-schemes-lc2018 Recursion schemes without the barbed wire
 - https://medium.com/@wiemzin/getting-started-with-recursion-schemes-using-matryoshka-f5b5ec01bb Getting started with recursion schemes using Matryoshka (Wiem Zine)
 - https://github.com/vil1/recursion-schemes-cookbook Recursion Schemes Cookbook
 - https://project-awesome.org/passy/awesome-recursion-schemes Awesome Recursion Schemes
