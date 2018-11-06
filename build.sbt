@@ -4,7 +4,7 @@ version := "0.1"
 
 scalaVersion := "2.12.7"
 
-libraryDependencies += "com.slamdata" %% "matryoshka-core" % "0.18.3" withSources()
+libraryDependencies += "com.slamdata" %% "matryoshka-core" % "0.21.3" withSources()
 
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.26" withSources()
 
@@ -23,7 +23,7 @@ scalacOptions ++= Seq(
   "-language:implicitConversions",     // Allow definition of implicit functions called views
   "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
   "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
-  "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
+  //"-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
   "-Xfuture",                          // Turn on future language features.
   "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
   "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.

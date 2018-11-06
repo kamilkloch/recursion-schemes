@@ -48,18 +48,20 @@ object TestMatryoshka extends App {
   // Evaluate an expression`
   def eval[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int](exprAlgebra)
 
-  def size[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int](matryoshka.size)
-
-  def attr[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Cofree[Expr, Int] = e.cata(matryoshka.attributeAlgebra(exprAlgebra))
+  def size[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = e.cata[Int](_.foldRight(0)(_ + _))
 
   def tree[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Tree[Expr[Predef.Unit]] = e.cata(matryoshka.toTree)
-
-  val gg: Algebra[Expr, Cofree[Expr, Int]] = matryoshka.attributeAlgebra(exprAlgebra)
 
   def foo[T](e: T)(implicit T: Recursive.Aux[T, Expr]): Int = T.histo[Int](e) {
     case _: Expr[Cofree[Expr, Int]] => 1
   }
 
+
+  def labelWithDepth[T, U](t: T)(implicit T: Recursive.Aux[T, Expr],
+                                 U: Corecursive.Aux[U, EnvT[Int, Expr, ?]]): U =
+    T.attributeTopDown[U, Int](t, 0) {
+      case (depth, _) => depth + 1
+    }
 
   def labelWithPath[T](implicit T: Recursive.Aux[T, Expr]): Coalgebra[EnvT[String, Expr, ?], (String, T)] = {
     case (carrier, e) =>
@@ -104,17 +106,17 @@ object TestMatryoshka extends App {
 
 
   val unwindExpr: Fix[Expr] = unwind[Fix[Expr]](11)
-  val annotatedExpr: Cofree[Expr, Int] = attr(unwindExpr)
+
+  val aa: Transform[Cofree[Expr, Int], Expr, EnvT[Int, Expr, ?]] = attributeAlgebra[Cofree[Expr, Int]](exprAlgebra)
+
 
   println(unwindExpr)
   println(eval(unwindExpr))
   println(tree(unwindExpr).drawTree)
-  println(annotatedExpr)
   //  println(s"size = ${size(unwindExpr)}")
 
   //  println(eval(annotatedExpr))
   implicitly[Recursive.Aux[Cofree[Expr, Int], EnvT[Int, Expr, ?]]]
-  println(annotatedExpr.head)
 
   val e = expr[Fix[Expr]]
 
@@ -132,9 +134,7 @@ object TestMatryoshka extends App {
   )
 
   val aux = implicitly[Recursive.Aux[Fix[Expr], Expr]]
-
   val topDown: Cofree[Expr, Int] = myAttributeTopDown(aux)(e, 0)((n, _) => n + 1)
-
 
 
 }
