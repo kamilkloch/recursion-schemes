@@ -137,6 +137,31 @@ object TestMatryoshka extends App {
   val topDown: Cofree[Expr, Int] = myAttributeTopDown(aux)(e, 0)((n, _) => n + 1)
 
 
+  implicit class RecursiveOps[T, F[_]](t: T)(implicit T: Recursive.Aux[T, F]) {
+    /** Attribute a tree via an algebra starting from the root. */
+    def myattributeTopDown2[U, A]
+    (z: A)
+    (f: (A, F[T]) => A)
+    (implicit U: Corecursive.Aux[U, EnvT[A, F, ?]], BF: Functor[F])
+    : U =
+      U.ana((z, t)){ case (a, t) =>
+        val ft: F[T] = T.project(t)
+        val aʹ: A = f(a, ft)
+        val fʹ: F[(A, T)] = ft ∘ ((aʹ, _))
+        EnvT((aʹ, fʹ))
+      }
+  }
+
+
+
+//  val topDown2 = e.myattributeTopDown2(0)((n, x) => n + 1)
+  val topDown2 = RecursiveOps(e).myattributeTopDown2(0)((n: Int, x: Expr[Fix[Expr]]) => n + 1)
+
+
+
+  println(topDown2)
+
+
 }
 
 
